@@ -28,7 +28,7 @@ const TranscribeZone = withFirebase(class Transcribe extends React.Component {
     const transcription = this.state.transcription
     return (
       <React.Fragment>
-        <TextareaAutosize defaultValue={transcription} onChange={this.updateTranscription.bind(this)} />
+        <TextareaAutosize defaultValue={transcription} onChange={this.updateTranscription.bind(this)} style={{width:'100%', minHeight:'250px'}} placeholder="Transcribe here"/>
 
         <div>
           <Button variant="contained" color="primary" onClick={this.sendTranscription.bind(this)}>Update

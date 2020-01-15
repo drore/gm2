@@ -19,7 +19,7 @@ export default function App() {
             renders the first one that matches the current URL. */}
         <Switch>
           <Route exact path="/">
-            <Home />
+            <Manager />
           </Route>
           <Route path="/manager">
             <Manager />

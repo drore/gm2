@@ -1,5 +1,5 @@
 import React from 'react'
-import { Grid, Paper } from '@material-ui/core'
+import { Grid, Paper, Button } from '@material-ui/core'
 import FileThumb from '../FileThumb'
 import { withFirebase } from '../Firebase';
 import FileDetails from '../FileDetails';
@@ -10,7 +10,8 @@ const manager = withFirebase(class Manager extends React.Component {
         super()
         this.state = {
             items: [],
-            item: null
+            item: null,
+            height: '300px'
         }
     }
 
@@ -44,11 +45,13 @@ const manager = withFirebase(class Manager extends React.Component {
 
         const listRef = storageRef.root.child('images');
         this.getItemsDetails(listRef)
+
+        this.setState({ height: (window.innerHeight - 70) + 'px' })
     }
     uploadFile(event) {
         const storage = this.props.firebase.storage
         const storageRef = storage.ref();
-        
+
         const file = event.target.files[0]
         // Create the file metadata
         var metadata = {
@@ -98,41 +101,70 @@ const manager = withFirebase(class Manager extends React.Component {
     }
 
     selectItem(item) {
-        this.setState({ item })
+        const self = this
+        self.setState({ item: null }, function () {
+            self.setState({ item: item })
+
+        })
     }
+
+    async downloadTranscriptions() {
+        const db = this.props.firebase.firestore
+        const items = await db.collection('fragments').get()
+        const itemsObj = items.docs.map(d => d.data())
+        this.downloadObjectAsJson(itemsObj, `gm_transcriptions_${new Date().getTime()}`)
+    }
+
+    downloadObjectAsJson(exportObj, exportName) {
+        var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportObj));
+        var downloadAnchorNode = document.createElement('a');
+        downloadAnchorNode.setAttribute("href", dataStr);
+        downloadAnchorNode.setAttribute("download", exportName + ".json");
+        document.body.appendChild(downloadAnchorNode); // required for firefox
+        downloadAnchorNode.click();
+        downloadAnchorNode.remove();
+    }
+
     render() {
         const item = this.state.item
         const details = item ? <FileDetails item={item} /> : null
-        const thumbs = this.state.items.map(item => <div style={{ display: 'inline-block', marginRight: '0.5rem' }} item onClick={function () { this.selectItem(item) }.bind(this)}>
+        const thumbs = this.state.items.map(item => <div item onClick={function () { this.selectItem(item) }.bind(this)}>
             <FileThumb item={item} />
         </div>)
+        const height = this.state.height
+
         return (
             // Two sections
+            <React.Fragment>
+                <Button variant="contained" onClick={this.downloadTranscriptions.bind(this)}>Download transcriptions file (JSON format)</Button>
 
-            <div style={{ flexGrow: 1 }}>
-                <Grid container spacing={1}>
-                    {/* Files */}
-                    <Grid item container xs={6} spacing={1}>
-                        <div>
-                            {thumbs}
-                            <input type="file" style={{
-                                verticalAlign: 'top',
-                                textAlign: 'center',
-                                fontSize: '0.3rem',
-                                boxSizing: 'border-box', border: '2px dotted #999', cursor: 'pointer', height: '3rem', width: '3rem', display: 'inline-block', marginRight: '0.5rem'
-                            }} item onChange={this.uploadFile.bind(this)} />
-                        </div>
+                <hr />
+                <div style={{ flexGrow: 1 }}>
+                    <Grid container spacing={1}>
+                        {/* Files */}
+                        <Grid item container xs={6} spacing={1} style={{ height: height, overflow: 'auto', padding: '0.5rem' }}>
 
+                            <div>
+                                <input type="file" style={{
+                                    verticalAlign: 'top',
+                                    textAlign: 'center',
+
+                                    boxSizing: 'border-box', border: '2px dotted #999', cursor: 'pointer'
+                                }} item onChange={this.uploadFile.bind(this)} />
+                                <hr />
+                                {thumbs}
+
+                            </div>
+
+                        </Grid>
+                        {/* Details */}
+                        <Grid item xs={6} style={{ height: height, overflow: 'auto', padding: '0.5rem' }}>
+                            {details}
+                        </Grid>
                     </Grid>
-                    {/* Details */}
-                    <Grid item xs={6}>
-                        {details}
-                    </Grid>
-                </Grid>
-            </div>
-
+                </div>
+            </React.Fragment>
         )
-
     }
 })
 
