@@ -23,7 +23,6 @@ const FileDetails = withFirebase(class FileDetails extends React.Component {
 
     // Verify firestore record
     const db = this.props.firebase.firestore
-    const itemID = escape(item.name)
     const collection = await db.collection(`fragments`).where('url', '==', item.url).limit(1).get();
     if (collection.size) {
       self.setState({ itemId: collection.docs[0].id })

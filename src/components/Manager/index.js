@@ -15,15 +15,30 @@ const manager = withFirebase(class Manager extends React.Component {
         }
     }
 
+    getItemDBEntry(itemDownloadURL){
+        return new Promise(async (resolve, reject) => { 
+            const db = this.props.firebase.firestore
+            const collection = await db.collection(`fragments`).where('url', '==', itemDownloadURL).limit(1).get();
+            if(collection.size){
+                resolve(collection.docs[0].data())
+            }
+            else{
+                resolve()
+            }
+        })
+    }
+
     getItemDetails(item) {
         return new Promise(async (resolve, reject) => {
             const itemDownloadURL = await item.getDownloadURL()
             const itemMetadata = await item.getMetadata()
-
+            const itemDBEntry = await this.getItemDBEntry(itemDownloadURL)
+            
             resolve({
                 name: item.name,
                 url: itemDownloadURL,
-                metadata: itemMetadata
+                metadata: itemMetadata,
+                transcription: itemDBEntry && itemDBEntry.transcription
             })
         })
     }
@@ -41,6 +56,7 @@ const manager = withFirebase(class Manager extends React.Component {
 
     componentWillMount() {
         const storage = this.props.firebase.storage
+        
         const storageRef = storage.ref();
 
         const listRef = storageRef.root.child('images');
@@ -104,7 +120,6 @@ const manager = withFirebase(class Manager extends React.Component {
         const self = this
         self.setState({ item: null }, function () {
             self.setState({ item: item })
-
         })
     }
 
@@ -133,6 +148,8 @@ const manager = withFirebase(class Manager extends React.Component {
         </div>)
         const height = this.state.height
 
+        const isLoading = !this.state.items.length
+
         return (
             // Two sections
             <React.Fragment>
@@ -140,6 +157,7 @@ const manager = withFirebase(class Manager extends React.Component {
 
                 <hr />
                 <div style={{ flexGrow: 1 }}>
+                {isLoading ? "Loading fragments...": null}
                     <Grid container spacing={1}>
                         {/* Files */}
                         <Grid item container xs={6} spacing={1} style={{ height: height, overflow: 'auto', padding: '0.5rem' }}>
@@ -158,6 +176,7 @@ const manager = withFirebase(class Manager extends React.Component {
 
                         </Grid>
                         {/* Details */}
+                        
                         <Grid item xs={6} style={{ height: height, overflow: 'auto', padding: '0.5rem' }}>
                             {details}
                         </Grid>
